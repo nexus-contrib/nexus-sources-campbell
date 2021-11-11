@@ -31,13 +31,7 @@
     <None Update="Database\DATA\20151005_13_bbbbb_25m0286.dat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Database\group-A\2015-12\000__0_2015-12-10_00-10-00_000000.dat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="Database\config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Database\group-A\2015-12\000__0_2015-12-10_00-00-00_000000.dat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
