@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Sources.Campbell
 {
-    [ExtensionIdentification("Campbell", "Campbell", "Provides access to databases with Campbell DAT files.")]
+    [ExtensionDescription("Provides access to databases with Campbell DAT files.")]
     public class CampbellDataSource : StructuredFileDataSource
     {
         #region Fields
