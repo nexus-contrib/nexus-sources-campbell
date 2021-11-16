@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus.Sources.Campbell
+namespace Nexus.Sources
 {
     [ExtensionDescription("Provides access to databases with Campbell DAT files.")]
     public class Campbell : StructuredFileDataSource

@@ -1,7 +1,7 @@
 ﻿using Nexus.DataModel;
 using System;
 
-namespace Nexus.Sources.Campbell
+namespace Nexus.Sources
 {
     public class Utilities
     {

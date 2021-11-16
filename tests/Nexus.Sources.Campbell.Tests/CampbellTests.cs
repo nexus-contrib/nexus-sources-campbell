@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nexus.Sources.Campbell.Tests
+namespace Nexus.Sources.Tests
 {
     public class CampbellTests
     {
