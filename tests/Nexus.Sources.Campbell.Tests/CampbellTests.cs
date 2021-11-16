@@ -11,13 +11,13 @@ using Xunit;
 
 namespace Nexus.Sources.Campbell.Tests
 {
-    public class CampbellDataSourceTests
+    public class CampbellTests
     {
         [Fact]
         public async Task ProvidesCatalog()
         {
             // arrange
-            var dataSource = new CampbellDataSource() as IDataSource;
+            var dataSource = new Campbell() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("Database", UriKind.Relative),
@@ -52,7 +52,7 @@ namespace Nexus.Sources.Campbell.Tests
         public async Task ProvidesDataAvailability()
         {
             // arrange
-            var dataSource = new CampbellDataSource() as IDataSource;
+            var dataSource = new Campbell() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("Database", UriKind.Relative),
@@ -89,7 +89,7 @@ namespace Nexus.Sources.Campbell.Tests
         public async Task CanReadFullDay()
         {
             // arrange
-            var dataSource = new CampbellDataSource() as IDataSource;
+            var dataSource = new Campbell() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("Database", UriKind.Relative),
