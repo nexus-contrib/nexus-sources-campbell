@@ -17,7 +17,7 @@ To use it, put a `config.json` with the following sample content into the databa
         "FileDateTimePreselector": "(.{11})_aaaa",
         "FileDateTimeSelector": "yyyyMMdd_HH",
         "FilePeriod": "01:00:00",
-        "CustomParameters": {
+        "AdditionalProperties": {
           "SamplePeriod": "00:00:00.050"
         }
       },
@@ -31,7 +31,7 @@ To use it, put a `config.json` with the following sample content into the databa
         "FileDateTimeSelector": "yyyyMMdd_HH",
         "FilePeriod": "01:00:00",
         "UtcOffset": "00:00:00",
-        "CustomParameters": {
+        "AdditionalProperties": {
           "SamplePeriod": "00:00:00.050",
           "ReplacePattern": "bbbbb_",
           "ReplaceValue": "bbbbb_25_"

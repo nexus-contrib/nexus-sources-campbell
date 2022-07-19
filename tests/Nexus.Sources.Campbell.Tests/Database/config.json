@@ -1,8 +1,7 @@
 {
   "/A/B/C": {
-    "FileSources": [
-      {
-        "Name": "aaaa",
+    "FileSources": {
+      "aaaa": {
         "PathSegments": [
           "'DATA'"
         ],
@@ -10,12 +9,11 @@
         "FileDateTimePreselector": "(.{11})_aaaa",
         "FileDateTimeSelector": "yyyyMMdd_HH",
         "FilePeriod": "01:00:00",
-        "CustomParameters": {
+        "AdditionalProperties": {
           "SamplePeriod": "00:00:00.050"
         }
       },
-      {
-        "Name": "bbbbb",
+      "bbbbb": {
         "PathSegments": [
           "'DATA'"
         ],
@@ -24,12 +22,12 @@
         "FileDateTimeSelector": "yyyyMMdd_HH",
         "FilePeriod": "01:00:00",
         "UtcOffset": "00:00:00",
-        "CustomParameters": {
+        "AdditionalProperties": {
           "SamplePeriod": "00:00:00.050",
           "ReplacePattern": "bbbbb_",
           "ReplaceValue": "bbbbb_25_"
         }
       }
-    ]
+    }
   }
 }

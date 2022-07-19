@@ -4,6 +4,7 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -19,6 +20,11 @@ namespace Nexus.Sources
         "https://github.com/Apollo3zehn/nexus-sources-campbell")]
     public class Campbell : StructuredFileDataSource
     {
+        record CatalogDescription(
+            string Title,
+            Dictionary<string, FileSource> FileSources, 
+            JsonElement? AdditionalProperties);
+
         #region Fields
 
         private Dictionary<string, CatalogDescription> _config = default!;
@@ -37,10 +43,10 @@ namespace Nexus.Sources
 
         protected override async Task SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
         {
-            this.Context = context;
-            this.Logger = logger;
+            Context = context;
+            Logger = logger;
 
-            var configFilePath = Path.Combine(this.Root, "config.json");
+            var configFilePath = Path.Combine(Root, "config.json");
 
             if (!File.Exists(configFilePath))
                 throw new Exception($"Configuration file {configFilePath} not found.");
@@ -49,28 +55,11 @@ namespace Nexus.Sources
             _config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString) ?? throw new Exception("config is null");
         }
 
-        protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)
+        protected override Task<Func<string, Dictionary<string, FileSource>>> GetFileSourceProviderAsync(
+            CancellationToken cancellationToken)
         {
-            var allFileSources = _config.ToDictionary(
-                config => config.Key,
-                config => config.Value.FileSources.Cast<FileSource>().ToArray());
-
-            var fileSourceProvider = new FileSourceProvider(
-                All: allFileSources,
-                Single: catalogItem =>
-                {
-                    var properties = catalogItem.Resource.Properties;
-
-                    if (properties is null)
-                        throw new ArgumentNullException(nameof(properties));
-
-                    var fileSourceName = properties.Value.GetProperty("FileSource").GetString();
-
-                    return allFileSources[catalogItem.Catalog.Id]
-                        .First(fileSource => ((ExtendedFileSource)fileSource).Name == fileSourceName);
-                });
-
-            return Task.FromResult(fileSourceProvider);
+            return Task.FromResult<Func<string, Dictionary<string, FileSource>>>(
+                catalogId => _config[catalogId].FileSources);
         }
 
         protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
@@ -87,19 +76,22 @@ namespace Nexus.Sources
             var catalogDescription = _config[catalogId];
             var catalog = new ResourceCatalog(id: catalogId);
 
-            foreach (var fileSource in catalogDescription.FileSources)
+            foreach (var (fileSourceId, fileSource) in catalogDescription.FileSources)
             {
                 var filePaths = default(string[]);
 
-                if (fileSource.CatalogSourceFiles is not null)
+                var catalogSourceFiles = fileSource.AdditionalProperties.GetStringArray("CatalogSourceFiles");
+
+                if (catalogSourceFiles is not null)
                 {
-                    filePaths = fileSource.CatalogSourceFiles
-                         .Select(filePath => Path.Combine(this.Root, filePath))
-                         .ToArray();
+                    filePaths = catalogSourceFiles
+                        .Where(filePath => filePath is not null)
+                        .Select(filePath => Path.Combine(Root, filePath!))
+                        .ToArray();
                 }
                 else
                 {
-                    if (!this.TryGetFirstFile(fileSource, out var filePath))
+                    if (!TryGetFirstFile(fileSource, out var filePath))
                         continue;
 
                     filePaths = new[] { filePath };
@@ -119,27 +111,29 @@ namespace Nexus.Sources
 
                         try
                         {
-                            var customParameters = fileSource.CustomParameters;
+                            var additionalProperties = fileSource.AdditionalProperties;
 
-                            if (customParameters is null)
-                                throw new ArgumentNullException(nameof(customParameters));
+                            if (additionalProperties is null)
+                                throw new ArgumentNullException(nameof(additionalProperties));
 
-                            var samplePeriod = TimeSpan.Parse(customParameters["SamplePeriod"]);
+                            var samplePeriodString = additionalProperties.GetStringValue("SamplePeriod");
+
+                            if (samplePeriodString is null)
+                                throw new Exception("The configuration parameter SamplePeriod is required.");
+
+                            var samplePeriod = TimeSpan.Parse(samplePeriodString);
 
                             var representation = new Representation(
                                 dataType: Utilities.GetNexusDataTypeFromType(campbellVariable.DataType),
                                 samplePeriod: samplePeriod);
 
-                            var id = campbellVariable.Name;
+                            if (!TryEnforceNamingConvention(campbellVariable.Name, additionalProperties, out var resourceId))
+                                continue;
 
-                            if (customParameters.TryGetValue("ReplacePattern", out var pattern) &&
-                                customParameters.TryGetValue("ReplaceValue", out var replacement))
-                                id = Regex.Replace(id, pattern, replacement);
-
-                            var resource = new ResourceBuilder(id: id)
+                            var resource = new ResourceBuilder(id: resourceId)
                                 .WithUnit(campbellVariable.Unit)
-                                .WithGroups(fileSource.Name)
-                                .WithProperty("FileSource", fileSource.Name)
+                                .WithGroups(fileSourceId)
+                                .WithProperty(StructuredFileDataSource.FileSourceKey, fileSourceId)
                                 .AddRepresentation(representation)
                                 .Build();
 
@@ -163,23 +157,15 @@ namespace Nexus.Sources
             return Task.Run(async () =>
             {
                 using var campbellFile = new CampbellFile(info.FilePath);
-
-                var fileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken);
-                var fileSource = (ExtendedFileSource)fileSourceProvider.Single(info.CatalogItem);
+                var fileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
 
                 var campbellVariable = campbellFile.Variables.First(current =>
                 {
-                    var id = current.Name;
-                    var customParameters = fileSource.CustomParameters;
+                    var additionalProperties = info.FileSource.AdditionalProperties;
 
-                    if (customParameters is null)
-                        throw new ArgumentNullException(nameof(customParameters));
-
-                    if (customParameters.TryGetValue("ReplacePattern", out var pattern) &&
-                        customParameters.TryGetValue("ReplaceValue", out var replacement))
-                        id = Regex.Replace(id, pattern, replacement);
-
-                    return id == info.CatalogItem.Resource.Id;
+                    return 
+                        TryEnforceNamingConvention(current.Name, additionalProperties, out var resourceId) &&
+                        resourceId == info.CatalogItem.Resource.Id;
                 });
 
                 var campbellData = campbellFile.Read<byte>(campbellVariable);
@@ -206,9 +192,29 @@ namespace Nexus.Sources
                 // skip data
                 else
                 {
-                    this.Logger.LogDebug("The actual buffer size does not match the expected size, which indicates an incomplete file");
+                    Logger.LogDebug("The actual buffer size does not match the expected size, which indicates an incomplete file");
                 }
             });
+        }
+
+        private bool TryEnforceNamingConvention(
+            string resourceId, 
+            JsonElement? additionalProperties, 
+            [NotNullWhen(returnValue: true)] out string newResourceId)
+        {
+            var replacePattern = additionalProperties.GetStringValue("ReplacePattern");
+            var replaceValue = additionalProperties.GetStringValue("ReplaceValue");
+
+            if (replacePattern is null || replaceValue is null)
+                newResourceId = resourceId;
+
+            else
+                newResourceId = Regex.Replace(resourceId, replacePattern, replaceValue);
+
+            newResourceId = Resource.InvalidIdCharsExpression.Replace(newResourceId, "");
+            newResourceId = Resource.InvalidIdStartCharsExpression.Replace(newResourceId, "");
+
+            return Resource.ValidIdExpression.IsMatch(newResourceId);
         }
 
         #endregion
