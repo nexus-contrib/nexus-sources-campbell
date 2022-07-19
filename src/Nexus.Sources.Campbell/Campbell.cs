@@ -112,10 +112,6 @@ namespace Nexus.Sources
                         try
                         {
                             var additionalProperties = fileSource.AdditionalProperties;
-
-                            if (additionalProperties is null)
-                                throw new ArgumentNullException(nameof(additionalProperties));
-
                             var samplePeriodString = additionalProperties.GetStringValue("SamplePeriod");
 
                             if (samplePeriodString is null)

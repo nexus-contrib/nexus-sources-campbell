@@ -32,7 +32,7 @@ namespace Nexus.Sources.Tests
             var actual = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var actualIds = actual.Resources.Skip(9).Take(2).Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Skip(9).Take(2).Select(resource => resource.Properties.GetStringValue("unit")).ToList();
-            var actualGroups = actual.Resources.Skip(9).Take(2).SelectMany(resource => resource.Properties.GetStringArray("groups")).ToList();
+            var actualGroups =  actual.Resources.Skip(9).Take(2).SelectMany(resource => resource.Properties.GetStringArray("groups")).ToList();
             var actualTimeRange = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
 
             // assert
