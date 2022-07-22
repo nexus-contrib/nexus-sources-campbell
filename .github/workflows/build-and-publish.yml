@@ -36,7 +36,7 @@ jobs:
         run: python build/create_tag_body.py
 
       - name: Build
-        run: dotnet build -c Release -o publish src/Nexus.Sources.Campbell/Nexus.Sources.Campbell.csproj
+        run: dotnet publish -c Release -o publish src/Nexus.Sources.Campbell/Nexus.Sources.Campbell.csproj
 
       - name: Test
         run: dotnet test -c Release /p:BuildProjectReferences=false
