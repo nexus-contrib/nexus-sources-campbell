@@ -2,15 +2,9 @@
 using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Sources
 {
@@ -163,10 +157,11 @@ namespace Nexus.Sources
                 if (result.Length == info.FileLength * elementSize)
                 {
                     var offset = (int)info.FileOffset * elementSize;
+                    var length = (int)info.FileBlock * elementSize;
 
                     result
                         .AsMemory()
-                        .Slice(offset)
+                        .Slice(offset, length)
                         .CopyTo(info.Data);
 
                     info
