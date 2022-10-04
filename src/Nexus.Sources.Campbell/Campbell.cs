@@ -112,7 +112,8 @@ namespace Nexus.Sources
                             var resource = new ResourceBuilder(id: resourceId)
                                 .WithUnit(campbellVariable.Unit)
                                 .WithGroups(fileSourceId)
-                                .WithProperty(StructuredFileDataSource.FileSourceKey, fileSourceId)
+                                .WithFileSourceId(fileSourceId)
+                                .WithOriginalName(campbellVariable.Name)
                                 .AddRepresentation(representation)
                                 .Build();
 
@@ -138,15 +139,7 @@ namespace Nexus.Sources
                 using var campbellFile = new CampbellFile(info.FilePath);
                 var fileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
 
-                var campbellVariable = campbellFile.Variables.First(current =>
-                {
-                    var additionalProperties = info.FileSource.AdditionalProperties;
-
-                    return 
-                        TryEnforceNamingConvention(current.Name, additionalProperties, out var resourceId) &&
-                        resourceId == info.CatalogItem.Resource.Id;
-                });
-
+                var campbellVariable = campbellFile.Variables.First(current => current.Name == info.OriginalName);
                 var campbellData = campbellFile.Read<byte>(campbellVariable);
                 var result = campbellData.Data.Buffer;
                 var elementSize = info.CatalogItem.Representation.ElementSize;
