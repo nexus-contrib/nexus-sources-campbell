@@ -63,7 +63,7 @@ namespace Nexus.Sources
             {
                 var filePaths = default(string[]);
 
-                var catalogSourceFiles = fileSource.AdditionalProperties.GetStringArray("CatalogSourceFiles");
+                var catalogSourceFiles = fileSource.AdditionalProperties?.GetStringArray("CatalogSourceFiles");
 
                 if (catalogSourceFiles is not null)
                 {
@@ -95,7 +95,7 @@ namespace Nexus.Sources
                         try
                         {
                             var additionalProperties = fileSource.AdditionalProperties;
-                            var samplePeriodString = additionalProperties.GetStringValue("SamplePeriod");
+                            var samplePeriodString = additionalProperties?.GetStringValue("SamplePeriod");
 
                             if (samplePeriodString is null)
                                 throw new Exception("The configuration parameter SamplePeriod is required.");
@@ -175,8 +175,8 @@ namespace Nexus.Sources
             JsonElement? additionalProperties, 
             [NotNullWhen(returnValue: true)] out string newResourceId)
         {
-            var replacePattern = additionalProperties.GetStringValue("ReplacePattern");
-            var replaceValue = additionalProperties.GetStringValue("ReplaceValue");
+            var replacePattern = additionalProperties?.GetStringValue("ReplacePattern");
+            var replaceValue = additionalProperties?.GetStringValue("ReplaceValue");
 
             if (replacePattern is null || replaceValue is null)
                 newResourceId = resourceId;
