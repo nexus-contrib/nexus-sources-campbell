@@ -16,7 +16,7 @@ namespace Nexus.Sources
     {
         record CatalogDescription(
             string Title,
-            Dictionary<string, FileSource> FileSources, 
+            Dictionary<string, IReadOnlyList<FileSource>> FileSourceGroups, 
             JsonElement? AdditionalProperties);
 
         #region Fields
@@ -34,15 +34,15 @@ namespace Nexus.Sources
             if (!File.Exists(configFilePath))
                 throw new Exception($"Configuration file {configFilePath} not found.");
 
-            var jsonString = await File.ReadAllTextAsync(configFilePath);
+            var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
             _config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString) ?? throw new Exception("config is null");
         }
 
-        protected override Task<Func<string, Dictionary<string, FileSource>>> GetFileSourceProviderAsync(
+        protected override Task<Func<string, Dictionary<string, IReadOnlyList<FileSource>>>> GetFileSourceProviderAsync(
             CancellationToken cancellationToken)
         {
-            return Task.FromResult<Func<string, Dictionary<string, FileSource>>>(
-                catalogId => _config[catalogId].FileSources);
+            return Task.FromResult<Func<string, Dictionary<string, IReadOnlyList<FileSource>>>>(
+                catalogId => _config[catalogId].FileSourceGroups);
         }
 
         protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ namespace Nexus.Sources
                 return Task.FromResult(_config.Select(entry => new CatalogRegistration(entry.Key, entry.Value.Title)).ToArray());
 
             else
-                return Task.FromResult(new CatalogRegistration[0]);
+                return Task.FromResult(Array.Empty<CatalogRegistration>());
         }
 
         protected override Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
@@ -59,73 +59,76 @@ namespace Nexus.Sources
             var catalogDescription = _config[catalogId];
             var catalog = new ResourceCatalog(id: catalogId);
 
-            foreach (var (fileSourceId, fileSource) in catalogDescription.FileSources)
+            foreach (var (fileSourceId, fileSourceGroup) in catalogDescription.FileSourceGroups)
             {
-                var filePaths = default(string[]);
-
-                var catalogSourceFiles = fileSource.AdditionalProperties?.GetStringArray("CatalogSourceFiles");
-
-                if (catalogSourceFiles is not null)
+                foreach (var fileSource in fileSourceGroup)
                 {
-                    filePaths = catalogSourceFiles
-                        .Where(filePath => filePath is not null)
-                        .Select(filePath => Path.Combine(Root, filePath!))
-                        .ToArray();
-                }
-                else
-                {
-                    if (!TryGetFirstFile(fileSource, out var filePath))
-                        continue;
+                    var filePaths = default(string[]);
 
-                    filePaths = new[] { filePath };
-                }
+                    var catalogSourceFiles = fileSource.AdditionalProperties?.GetStringArray("CatalogSourceFiles");
 
-                cancellationToken.ThrowIfCancellationRequested();
-
-                foreach (var filePath in filePaths)
-                {
-                    var newCatalogBuilder = new ResourceCatalogBuilder(id: catalogId);
-
-                    using var campbellFile = new CampbellFile(filePath);
-
-                    foreach (var campbellVariable in campbellFile.Variables)
+                    if (catalogSourceFiles is not null)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        filePaths = catalogSourceFiles
+                            .Where(filePath => filePath is not null)
+                            .Select(filePath => Path.Combine(Root, filePath!))
+                            .ToArray();
+                    }
+                    else
+                    {
+                        if (!TryGetFirstFile(fileSource, out var filePath))
+                            continue;
 
-                        try
-                        {
-                            var additionalProperties = fileSource.AdditionalProperties;
-                            var samplePeriodString = additionalProperties?.GetStringValue("SamplePeriod");
-
-                            if (samplePeriodString is null)
-                                throw new Exception("The configuration parameter SamplePeriod is required.");
-
-                            var samplePeriod = TimeSpan.Parse(samplePeriodString);
-
-                            var representation = new Representation(
-                                dataType: Utilities.GetNexusDataTypeFromType(campbellVariable.DataType),
-                                samplePeriod: samplePeriod);
-
-                            if (!TryEnforceNamingConvention(campbellVariable.Name, additionalProperties, out var resourceId))
-                                continue;
-
-                            var resource = new ResourceBuilder(id: resourceId)
-                                .WithUnit(campbellVariable.Unit)
-                                .WithGroups(fileSourceId)
-                                .WithFileSourceId(fileSourceId)
-                                .WithOriginalName(campbellVariable.Name)
-                                .AddRepresentation(representation)
-                                .Build();
-
-                            newCatalogBuilder.AddResource(resource);
-                        }
-                        catch (NotSupportedException) // for invalid data type
-                        {
-                            // skip
-                        }
+                        filePaths = new[] { filePath };
                     }
 
-                    catalog = catalog.Merge(newCatalogBuilder.Build());
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    foreach (var filePath in filePaths)
+                    {
+                        var newCatalogBuilder = new ResourceCatalogBuilder(id: catalogId);
+
+                        using var campbellFile = new CampbellFile(filePath);
+
+                        foreach (var campbellVariable in campbellFile.Variables)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            try
+                            {
+                                var additionalProperties = fileSource.AdditionalProperties;
+                                var samplePeriodString = additionalProperties?.GetStringValue("SamplePeriod");
+
+                                if (samplePeriodString is null)
+                                    throw new Exception("The configuration parameter SamplePeriod is required.");
+
+                                var samplePeriod = TimeSpan.Parse(samplePeriodString);
+
+                                var representation = new Representation(
+                                    dataType: Utilities.GetNexusDataTypeFromType(campbellVariable.DataType),
+                                    samplePeriod: samplePeriod);
+
+                                if (!TryEnforceNamingConvention(campbellVariable.Name, additionalProperties, out var resourceId))
+                                    continue;
+
+                                var resource = new ResourceBuilder(id: resourceId)
+                                    .WithUnit(campbellVariable.Unit)
+                                    .WithGroups(fileSourceId)
+                                    .WithFileSourceId(fileSourceId)
+                                    .WithOriginalName(campbellVariable.Name)
+                                    .AddRepresentation(representation)
+                                    .Build();
+
+                                newCatalogBuilder.AddResource(resource);
+                            }
+                            catch (NotSupportedException) // for invalid data type
+                            {
+                                // skip
+                            }
+                        }
+
+                        catalog = catalog.Merge(newCatalogBuilder.Build());
+                    }
                 }
             }
 
@@ -140,8 +143,8 @@ namespace Nexus.Sources
                 var fileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
 
                 var campbellVariable = campbellFile.Variables.First(current => current.Name == info.OriginalName);
-                var campbellData = campbellFile.Read<byte>(campbellVariable);
-                var result = campbellData.Data.Buffer;
+                var (timeStamps, data) = campbellFile.Read<byte>(campbellVariable);
+                var result = data.Buffer;
                 var elementSize = info.CatalogItem.Representation.ElementSize;
 
                 cancellationToken.ThrowIfCancellationRequested();
@@ -167,10 +170,10 @@ namespace Nexus.Sources
                 {
                     Logger.LogDebug("The actual buffer size does not match the expected size, which indicates an incomplete file");
                 }
-            });
+            }, cancellationToken);
         }
 
-        private bool TryEnforceNamingConvention(
+        private static bool TryEnforceNamingConvention(
             string resourceId, 
             JsonElement? additionalProperties, 
             [NotNullWhen(returnValue: true)] out string newResourceId)

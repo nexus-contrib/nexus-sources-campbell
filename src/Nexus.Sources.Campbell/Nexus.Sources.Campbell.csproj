@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
@@ -7,8 +7,8 @@
 
   <ItemGroup>
     <PackageReference Include="CampbellDAT" Version="1.1.1" />
-    <PackageReference Include="Nexus.Sources.StructuredFile" Version="1.0.0" />
-    <PackageReference Include="Nexus.Extensibility" Version="1.0.0">
+    <PackageReference Include="Nexus.Sources.StructuredFile" Version="2.0.0-beta.2" />
+    <PackageReference Include="Nexus.Extensibility" Version="2.0.0-beta.8">
       <ExcludeAssets>runtime;native</ExcludeAssets>
     </PackageReference>
   </ItemGroup>

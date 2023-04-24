@@ -1,7 +1,7 @@
 {
   "/A/B/C": {
-    "FileSources": {
-      "aaaa": {
+    "FileSourceGroups": {
+      "aaaa": [{
         "PathSegments": [
           "'DATA'"
         ],
@@ -12,8 +12,8 @@
         "AdditionalProperties": {
           "SamplePeriod": "00:00:00.050"
         }
-      },
-      "bbbbb": {
+      }],
+      "bbbbb": [{
         "PathSegments": [
           "'DATA'"
         ],
@@ -27,7 +27,7 @@
           "ReplacePattern": "bbbbb_",
           "ReplaceValue": "bbbbb_25_"
         }
-      }
+      }]
     }
   }
 }

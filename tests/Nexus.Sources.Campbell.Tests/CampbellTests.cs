@@ -27,7 +27,7 @@ namespace Nexus.Sources.Tests
             var actualIds = actual.Resources!.Skip(9).Take(2).Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources!.Skip(9).Take(2).Select(resource => resource.Properties?.GetStringValue("unit")).ToList();
             var actualGroups =  actual.Resources!.Skip(9).Take(2).SelectMany(resource => resource.Properties?.GetStringArray("groups")!).ToList();
-            var actualTimeRange = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
+            var (begin, end) = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
 
             // assert
             var expectedIds = new List<string>() { "aaaa_55_SonicTempC", "bbbbb_25_Vx" };
@@ -39,8 +39,8 @@ namespace Nexus.Sources.Tests
             Assert.True(expectedIds.SequenceEqual(actualIds));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
-            Assert.Equal(expectedStartDate, actualTimeRange.Begin);
-            Assert.Equal(expectedEndDate, actualTimeRange.End);
+            Assert.Equal(expectedStartDate, begin);
+            Assert.Equal(expectedEndDate, end);
         }
 
         [Fact]
@@ -73,10 +73,11 @@ namespace Nexus.Sources.Tests
             // assert
             var expected = new SortedDictionary<DateTime, double>(Enumerable.Range(0, 2).ToDictionary(
                     i => begin.AddDays(i),
-                    i => 0.0));
-
-            expected[begin.AddDays(0)] = 0;
-            expected[begin.AddDays(1)] = 4 / 48.0;
+                    i => 0.0))
+            {
+                [begin.AddDays(0)] = 0,
+                [begin.AddDays(1)] = 4 / 48.0
+            };
 
             Assert.True(expected.SequenceEqual(new SortedDictionary<DateTime, double>(actual)));
         }
@@ -97,8 +98,8 @@ namespace Nexus.Sources.Tests
 
             // act
             var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
-            var resource = catalog.Resources!.First();
-            var representation = resource.Representations!.First();
+            var resource = catalog.Resources![0];
+            var representation = resource.Representations![0];
             var catalogItem = new CatalogItem(catalog, resource, representation, default);
 
             var begin = new DateTime(2015, 10, 05, 0, 0, 0, DateTimeKind.Utc);
