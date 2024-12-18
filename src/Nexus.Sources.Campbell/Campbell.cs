@@ -48,10 +48,9 @@ public class Campbell : StructuredFileDataSource
             return Task.FromResult(Array.Empty<CatalogRegistration>());
     }
 
-    protected override Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+    protected override Task<ResourceCatalog> EnrichCatalogAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
     {
-        var catalogDescription = _config[catalogId];
-        var catalog = new ResourceCatalog(id: catalogId);
+        var catalogDescription = _config[catalog.Id];
 
         foreach (var (fileSourceId, fileSourceGroup) in catalogDescription.FileSourceGroups)
         {
@@ -80,7 +79,7 @@ public class Campbell : StructuredFileDataSource
 
                 foreach (var filePath in filePaths)
                 {
-                    var newCatalogBuilder = new ResourceCatalogBuilder(id: catalogId);
+                    var newCatalogBuilder = new ResourceCatalogBuilder(id: catalog.Id);
 
                     using var campbellFile = new CampbellFile(filePath);
 
@@ -127,7 +126,7 @@ public class Campbell : StructuredFileDataSource
 
     protected override Task ReadAsync(
         ReadInfo info, 
-        StructuredFileReadRequest[] readRequests, 
+        ReadRequest[] readRequests, 
         CancellationToken cancellationToken)
     {
         return Task.Run(async () =>
@@ -137,7 +136,7 @@ public class Campbell : StructuredFileDataSource
                 using var campbellFile = new CampbellFile(info.FilePath);
                 var fileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
 
-                var campbellVariable = campbellFile.Variables.First(current => current.Name == readRequest.OriginalName);
+                var campbellVariable = campbellFile.Variables.First(current => current.Name == readRequest.OriginalResourceName);
                 var (timeStamps, data) = campbellFile.Read<byte>(campbellVariable);
                 var result = data.Buffer;
                 var elementSize = readRequest.CatalogItem.Representation.ElementSize;
