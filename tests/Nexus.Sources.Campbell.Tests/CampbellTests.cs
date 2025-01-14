@@ -30,7 +30,7 @@ public class CampbellTests
         var (begin, end) = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
 
         // assert
-        var expectedIds = new List<string>() { "aaaa_55_SonicTempC", "bbbbb_25_Vx" };
+        var expectedIds = new List<string>() { "aaaa_55_SonicTempC", "bbbbb_Vx" };
         var expectedUnits = new List<string>() { "", "" };
         var expectedGroups = new List<string>() { "aaaa", "bbbbb" };
         var expectedStartDate = new DateTime(2015, 10, 05, 12, 00, 00, DateTimeKind.Utc);
