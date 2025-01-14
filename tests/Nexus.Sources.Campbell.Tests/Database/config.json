@@ -23,9 +23,7 @@
         "FilePeriod": "01:00:00",
         "UtcOffset": "00:00:00",
         "AdditionalProperties": {
-          "SamplePeriod": "00:00:00.050",
-          "ReplacePattern": "bbbbb_",
-          "ReplaceValue": "bbbbb_25_"
+          "SamplePeriod": "00:00:00.050"
         }
       }]
     }

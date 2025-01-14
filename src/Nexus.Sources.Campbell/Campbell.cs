@@ -4,7 +4,6 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Nexus.Sources;
 
@@ -97,7 +96,7 @@ public class Campbell : StructuredFileDataSource
                                 dataType: Utilities.GetNexusDataTypeFromType(campbellVariable.DataType),
                                 samplePeriod: samplePeriod);
 
-                            if (!TryEnforceNamingConvention(campbellVariable.Name, additionalProperties, out var resourceId))
+                            if (!TryEnforceNamingConvention(campbellVariable.Name, out var resourceId))
                                 continue;
 
                             var resource = new ResourceBuilder(id: resourceId)
@@ -170,18 +169,9 @@ public class Campbell : StructuredFileDataSource
 
     private static bool TryEnforceNamingConvention(
         string resourceId,
-        JsonElement? additionalProperties,
         [NotNullWhen(returnValue: true)] out string newResourceId)
     {
-        var replacePattern = additionalProperties?.GetStringValue("ReplacePattern");
-        var replaceValue = additionalProperties?.GetStringValue("ReplaceValue");
-
-        if (replacePattern is null || replaceValue is null)
-            newResourceId = resourceId;
-
-        else
-            newResourceId = Regex.Replace(resourceId, replacePattern, replaceValue);
-
+        newResourceId = resourceId;
         newResourceId = Resource.InvalidIdCharsExpression.Replace(newResourceId, "");
         newResourceId = Resource.InvalidIdStartCharsExpression.Replace(newResourceId, "");
 

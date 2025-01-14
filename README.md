@@ -32,9 +32,7 @@ To use it, put a `config.json` with the following sample content into the databa
         "FilePeriod": "01:00:00",
         "UtcOffset": "00:00:00",
         "AdditionalProperties": {
-          "SamplePeriod": "00:00:00.050",
-          "ReplacePattern": "bbbbb_",
-          "ReplaceValue": "bbbbb_25_"
+          "SamplePeriod": "00:00:00.050"
         }
       }
     ]
