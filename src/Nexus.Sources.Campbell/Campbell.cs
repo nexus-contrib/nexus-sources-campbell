@@ -3,65 +3,74 @@ using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 
 namespace Nexus.Sources;
+
+/// <summary>
+/// Additional extension-specific settings.
+/// </summary>
+/// <param name="TitleMap">The catalog ID to title map. Add an entry here to specify a custom catalog title.</param>
+public record CampbellSettings(
+    Dictionary<string, string> TitleMap
+);
+
+/// <summary>
+/// Additional file source settings.
+/// </summary>
+/// <param name="SamplePeriod">The period between samples.</param>
+/// <param name="CatalogSourceFiles">The source files to populate the catalog with resources.</param>
+public record CampbellAdditionalFileSourceSettings(
+    TimeSpan SamplePeriod,
+    string[]? CatalogSourceFiles
+);
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 [ExtensionDescription(
     "Provides access to databases with Campbell DAT files.",
     "https://github.com/Apollo3zehn/nexus-sources-campbell",
     "https://github.com/Apollo3zehn/nexus-sources-campbell")]
-public class Campbell : StructuredFileDataSource
+public class Campbell : StructuredFileDataSource<CampbellSettings, CampbellAdditionalFileSourceSettings>
 {
-    record CatalogDescription(
-        string Title,
-        Dictionary<string, IReadOnlyList<FileSource>> FileSourceGroups,
-        JsonElement? AdditionalProperties);
-
-    private Dictionary<string, CatalogDescription> _config = default!;
-
-    protected override async Task InitializeAsync(CancellationToken cancellationToken)
-    {
-        var configFilePath = Path.Combine(Root, "config.json");
-
-        if (!File.Exists(configFilePath))
-            throw new Exception($"Configuration file {configFilePath} not found.");
-
-        var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
-        _config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString) ?? throw new Exception("config is null");
-    }
-
-    protected override Task<Func<string, Dictionary<string, IReadOnlyList<FileSource>>>> GetFileSourceProviderAsync(
-        CancellationToken cancellationToken)
-    {
-        return Task.FromResult<Func<string, Dictionary<string, IReadOnlyList<FileSource>>>>(
-            catalogId => _config[catalogId].FileSourceGroups);
-    }
-
-    protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
+    protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
+        string path,
+        CancellationToken cancellationToken
+    )
     {
         if (path == "/")
-            return Task.FromResult(_config.Select(entry => new CatalogRegistration(entry.Key, entry.Value.Title)).ToArray());
+        {
+            return Task.FromResult(Context.SourceConfiguration.FileSourceGroupsMap
+                .Select(entry =>
+                    {
+                        Context.SourceConfiguration.AdditionalSettings.TitleMap.TryGetValue(entry.Key, out var title);
+                        return new CatalogRegistration(entry.Key, title);
+                    }
+                ).ToArray());
+        }
 
         else
+        {
             return Task.FromResult(Array.Empty<CatalogRegistration>());
+        }
     }
 
-    protected override Task<ResourceCatalog> EnrichCatalogAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
+    protected override Task<ResourceCatalog> EnrichCatalogAsync(
+        ResourceCatalog catalog,
+        CancellationToken cancellationToken
+    )
     {
-        var catalogDescription = _config[catalog.Id];
+        var fileSourceGroupsMap = Context.SourceConfiguration.FileSourceGroupsMap[catalog.Id];
 
-        foreach (var (fileSourceId, fileSourceGroup) in catalogDescription.FileSourceGroups)
+        foreach (var (fileSourceId, fileSourceGroup) in fileSourceGroupsMap)
         {
             foreach (var fileSource in fileSourceGroup)
             {
+                var additionalSettings = fileSource.AdditionalSettings;
                 var filePaths = default(string[]);
 
-                var catalogSourceFiles = fileSource.AdditionalProperties?.GetStringArray("CatalogSourceFiles");
-
-                if (catalogSourceFiles is not null)
+                if (additionalSettings.CatalogSourceFiles is not null)
                 {
-                    filePaths = catalogSourceFiles
+                    filePaths = additionalSettings.CatalogSourceFiles
                         .Where(filePath => filePath is not null)
                         .Select(filePath => Path.Combine(Root, filePath!))
                         .ToArray();
@@ -88,9 +97,7 @@ public class Campbell : StructuredFileDataSource
 
                         try
                         {
-                            var additionalProperties = fileSource.AdditionalProperties;
-                            var samplePeriodString = (additionalProperties?.GetStringValue("SamplePeriod")) ?? throw new Exception("The configuration parameter SamplePeriod is required.");
-                            var samplePeriod = TimeSpan.Parse(samplePeriodString);
+                            var samplePeriod = fileSource.AdditionalSettings.SamplePeriod;
 
                             var representation = new Representation(
                                 dataType: Utilities.GetNexusDataTypeFromType(campbellVariable.DataType),
@@ -124,16 +131,16 @@ public class Campbell : StructuredFileDataSource
     }
 
     protected override Task ReadAsync(
-        ReadInfo info, 
+        ReadInfo<CampbellAdditionalFileSourceSettings> info, 
         ReadRequest[] readRequests, 
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        return Task.Run(async () =>
+        return Task.Run(() =>
         {
             foreach (var readRequest in readRequests)
             {
                 using var campbellFile = new CampbellFile(info.FilePath);
-                var fileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
 
                 var campbellVariable = campbellFile.Variables.First(current => current.Name == readRequest.OriginalResourceName);
                 var (timeStamps, data) = campbellFile.Read<byte>(campbellVariable);
@@ -169,7 +176,8 @@ public class Campbell : StructuredFileDataSource
 
     private static bool TryEnforceNamingConvention(
         string resourceId,
-        [NotNullWhen(returnValue: true)] out string newResourceId)
+        [NotNullWhen(returnValue: true)] out string newResourceId
+    )
     {
         newResourceId = resourceId;
         newResourceId = Resource.InvalidIdCharsExpression.Replace(newResourceId, "");
@@ -178,3 +186,5 @@ public class Campbell : StructuredFileDataSource
         return Resource.ValidIdExpression.IsMatch(newResourceId);
     }
 }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

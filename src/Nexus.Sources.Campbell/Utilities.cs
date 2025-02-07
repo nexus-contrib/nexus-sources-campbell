@@ -2,7 +2,7 @@
 
 namespace Nexus.Sources;
 
-public class Utilities
+internal class Utilities
 {
     public static NexusDataType GetNexusDataTypeFromType(Type type)
     {

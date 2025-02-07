@@ -1,31 +1,34 @@
 {
-  "/A/B/C": {
-    "FileSourceGroups": {
+  "fileSourceGroupsMap": {
+    "/A/B/C": {
       "aaaa": [{
-        "PathSegments": [
+        "pathSegments": [
           "'DATA'"
         ],
-        "FileTemplate": "yyyyMMdd_HH'_aaaa_115m_55m????.dat'",
-        "FileDateTimePreselector": "(.{11})_aaaa",
-        "FileDateTimeSelector": "yyyyMMdd_HH",
-        "FilePeriod": "01:00:00",
-        "AdditionalProperties": {
-          "SamplePeriod": "00:00:00.050"
+        "fileTemplate": "yyyyMMdd_HH'_aaaa_115m_55m????.dat'",
+        "fileDateTimePreselector": "(.{11})_aaaa",
+        "fileDateTimeSelector": "yyyyMMdd_HH",
+        "filePeriod": "01:00:00",
+        "additionalSettings": {
+          "samplePeriod": "00:00:00.050"
         }
       }],
       "bbbbb": [{
-        "PathSegments": [
+        "pathSegments": [
           "'DATA'"
         ],
-        "FileTemplate": "yyyyMMdd_HH'_bbbbb_25m????.dat'",
-        "FileDateTimePreselector": "(.{11})_bbbbb",
-        "FileDateTimeSelector": "yyyyMMdd_HH",
-        "FilePeriod": "01:00:00",
-        "UtcOffset": "00:00:00",
-        "AdditionalProperties": {
-          "SamplePeriod": "00:00:00.050"
+        "fileTemplate": "yyyyMMdd_HH'_bbbbb_25m????.dat'",
+        "fileDateTimePreselector": "(.{11})_bbbbb",
+        "fileDateTimeSelector": "yyyyMMdd_HH",
+        "filePeriod": "01:00:00",
+        "utcOffset": "00:00:00",
+        "additionalSettings": {
+          "samplePeriod": "00:00:00.050"
         }
       }]
     }
+  },
+  "additionalSettings": {
+    "titleMap": {}
   }
 }
