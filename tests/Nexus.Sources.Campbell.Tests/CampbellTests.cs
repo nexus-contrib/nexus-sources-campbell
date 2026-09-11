@@ -94,7 +94,7 @@ public class CampbellTests
         var end = new DateTime(2015, 10, 06, 0, 0, 0, DateTimeKind.Utc);
         var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
-        var result = new ReadRequest(resource.Id, catalogItem, data, status);
+        var result = new ReadRequest(resource.Id, catalogItem, data, status, _ => Task.CompletedTask, CancellationToken.None);
         await dataSource.ReadAsync(begin, end, [result], default!, new Progress<double>(), CancellationToken.None);
 
         // assert

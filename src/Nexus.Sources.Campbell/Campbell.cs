@@ -109,9 +109,11 @@ public class Campbell : StructuredFileDataSource<CampbellSettings, CampbellAddit
                             var resource = new ResourceBuilder(id: resourceId)
                                 .WithUnit(campbellVariable.Unit)
                                 .WithGroups(fileSourceId)
-                                .WithFileSourceId(fileSourceId)
                                 .WithOriginalName(campbellVariable.Name)
-                                .AddRepresentation(representation)
+                                .AddRepresentations(new Dictionary<Representation, string>
+                                {
+                                    [representation] = fileSourceId
+                                })
                                 .Build();
 
                             newCatalogBuilder.AddResource(resource);
@@ -132,7 +134,7 @@ public class Campbell : StructuredFileDataSource<CampbellSettings, CampbellAddit
 
     protected override Task ReadAsync(
         ReadInfo<CampbellAdditionalFileSourceSettings> info, 
-        ReadRequest[] readRequests, 
+        StructuredFileReadRequest[] readRequests, 
         CancellationToken cancellationToken
     )
     {
