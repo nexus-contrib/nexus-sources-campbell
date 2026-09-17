@@ -9,7 +9,7 @@
     <PackageReference Include="Nexus.Extensibility" Version="2.0.0-beta.56">
       <ExcludeAssets>runtime;native</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Nexus.Sources.StructuredFile" Version="2.0.0-beta.45" />
+    <PackageReference Include="Nexus.Sources.StructuredFile" Version="2.0.0-beta.46" />
   </ItemGroup>
 
 </Project>
